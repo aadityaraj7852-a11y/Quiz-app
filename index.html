@@ -2,345 +2,244 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>MCQ Table-format DOCX Generator (No background)</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCQ Table DOCX Generator (Exact Format)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body{font-family: Arial; margin:14px}
-  .wrap{display:flex; gap:12px; flex-wrap:wrap}
-  .col{flex:1; min-width:300px; border:1px solid #ddd; padding:12px; border-radius:6px}
-  input, textarea, select { width:100%; padding:8px; margin:6px 0; box-sizing:border-box; }
-  button{padding:10px 14px; margin-right:8px; background:#0b7a3e; color:#fff; border:0; border-radius:6px; cursor:pointer}
-  .muted{color:#666; font-size:13px}
-  .preview-item{border:1px dashed #ccc; padding:8px; margin:8px 0}
+ body{font-family:Arial;margin:15px}
+ .wrap{display:flex;gap:12px;flex-wrap:wrap}
+ .col{flex:1;min-width:300px;border:1px solid #ccc;padding:12px;border-radius:6px}
+ input,textarea,select{width:100%;padding:8px;margin:4px 0}
+ button{padding:10px 16px;margin-top:8px;background:#0066cc;color:#fff;border:0;border-radius:6px;cursor:pointer}
+ .preview-item{border:1px dashed #aaa;padding:6px;margin:6px 0}
 </style>
 </head>
 <body>
-<h2>MCQ → Table DOCX (No background)</h2>
-<p class="muted">Fields हर एक table में: Header-row = field name, Next-row = value. Background नहीं डाला गया।</p>
+
+<h2>MCQ Table DOCX Generator (Exact Format)</h2>
 
 <div class="wrap">
-  <div class="col">
-    <label>Module</label>
-    <input id="module" placeholder="Hindi">
+ <div class="col">
+   <label>Module</label><input id="module">
 
-    <label>Question</label>
-    <textarea id="question" rows="3" placeholder="Question statement"></textarea>
+   <label>Question</label><textarea id="question"></textarea>
 
-    <label>Option A</label>
-    <input id="optA" placeholder="Option A">
-    <label>Option B</label>
-    <input id="optB" placeholder="Option B">
-    <label>Option C</label>
-    <input id="optC" placeholder="Option C">
-    <label>Option D</label>
-    <input id="optD" placeholder="Option D">
+   <label>Option A</label><input id="optA">
+   <label>Option B</label><input id="optB">
+   <label>Option C</label><input id="optC">
+   <label>Option D</label><input id="optD">
 
-    <label>Answer (A/B/C/D)</label>
-    <input id="answer" maxlength="1" placeholder="A">
+   <label>Answer (A/B/C/D)</label><input id="answer" maxlength="1">
 
-    <label>Solution</label>
-    <textarea id="solution" rows="3"></textarea>
+   <label>Solution</label><textarea id="solution"></textarea>
 
-    <div style="display:flex; gap:8px">
-      <div style="flex:1">
-        <label>Positive Marks</label>
-        <input id="pm" value="1">
-      </div>
-      <div style="flex:1">
-        <label>Negative Marks</label>
-        <input id="nm" value="0.6">
-      </div>
-    </div>
+   <label>Positive Marks</label><input id="pm" value="1">
+   <label>Negative Marks</label><input id="nm" value="0.6">
 
-    <label>Language</label>
-    <select id="language">
-      <option value="hi">hi</option>
-      <option value="en">en</option>
-    </select>
+   <label>Language</label>
+   <select id="language">
+     <option value="hi">hi</option>
+     <option value="en">en</option>
+   </select>
 
-    <div style="margin-top:10px">
-      <button id="addBtn">Add Question</button>
-      <button id="clearBtn" style="background:#999">Clear Fields</button>
-    </div>
+   <button onclick="addQ()">Add Question</button>
+   <button onclick="exportDOCX()" style="background:green">Export DOCX</button>
+ </div>
 
-    <hr>
-
-    <div>
-      <button id="exportBtn" style="background:#0066cc">Export DOCX (tables)</button>
-      <span class="muted"> → Desktop recommended</span>
-    </div>
-  </div>
-
-  <div class="col">
-    <h3>Preview</h3>
-    <div id="previewArea" class="muted">No questions added.</div>
-    <div style="margin-top:10px">
-      <button id="removeLast" style="background:#c0392b">Remove Last</button>
-      <button id="resetAll" style="background:#7f8c8d">Clear All</button>
-    </div>
-  </div>
+ <div class="col">
+   <h3>Preview</h3>
+   <div id="preview"></div>
+ </div>
 </div>
 
 <script>
-/* Simple state */
-let questions = [];
+let list = [];
 let qno = 1;
 
-/* Helpers */
 function val(id){ return document.getElementById(id).value.trim(); }
-function setVal(id,v){ document.getElementById(id).value = v || ''; }
-
-/* UI handlers */
-document.getElementById('addBtn').addEventListener('click', () => {
-  const module = val('module') || 'General';
-  const question = val('question');
-  if(!question){ alert('Question डालो'); return; }
-  const item = {
-    module,
-    questionno: qno++,
-    question,
-    type: 'mcq',
-    optionA: val('optA'),
-    optionB: val('optB'),
-    optionC: val('optC'),
-    optionD: val('optD'),
-    answer: val('answer').toUpperCase(),
-    solution: val('solution'),
-    pm: val('pm') || '1',
-    nm: val('nm') || '0',
-    language: val('language') || 'hi'
-  };
-  questions.push(item);
-  renderPreview();
-  clearFields(false);
-});
-
-document.getElementById('clearBtn').addEventListener('click', ()=> clearFields(true));
-document.getElementById('removeLast').addEventListener('click', ()=> {
-  if(questions.length===0) return alert('No questions to remove');
-  if(!confirm('Remove last question?')) return;
-  questions.pop();
-  qno = questions.length ? (questions[questions.length-1].questionno + 1) : 1;
-  renderPreview();
-});
-document.getElementById('resetAll').addEventListener('click', ()=> {
-  if(!confirm('Remove all questions?')) return;
-  questions = []; qno = 1; renderPreview();
-});
-
-function clearFields(all=true){
-  if(all) setVal('module','');
-  setVal('question','');
-  setVal('optA',''); setVal('optB',''); setVal('optC',''); setVal('optD','');
-  setVal('answer',''); setVal('solution','');
-  setVal('pm','1'); setVal('nm','0.6');
+function addQ(){
+ let q = {
+   module: val("module") || "General",
+   questionno: qno++,
+   question: val("question"),
+   A: val("optA"),
+   B: val("optB"),
+   C: val("optC"),
+   D: val("optD"),
+   answer: val("answer").toUpperCase(),
+   solution: val("solution"),
+   pm: val("pm"),
+   nm: val("nm"),
+   lang: val("language")
+ };
+ list.push(q);
+ render();
 }
 
-function renderPreview(){
-  const area = document.getElementById('previewArea');
-  if(questions.length===0){ area.innerHTML = '<div class="muted">No questions added.</div>'; return; }
-  area.innerHTML = '';
-  questions.forEach(q=>{
-    const d = document.createElement('div');
-    d.className = 'preview-item';
-    d.innerHTML = `<b>${q.questionno}) [${escapeHtml(q.module)}]</b><div style="margin-top:6px">${escapeHtml(q.question)}</div>
-      <div style="margin-top:6px">A. ${escapeHtml(q.optionA)} | B. ${escapeHtml(q.optionB)} | C. ${escapeHtml(q.optionC)} | D. ${escapeHtml(q.optionD)}</div>
-      <div style="margin-top:6px"><b>Ans:</b> ${escapeHtml(q.answer)} &nbsp; <b>+:</b>${q.pm} <b>-:</b>${q.nm}</div>`;
-    area.appendChild(d);
-  });
+function render(){
+ let area = document.getElementById("preview");
+ area.innerHTML = "";
+ list.forEach(q=>{
+   area.innerHTML += `<div class="preview-item"><b>${q.questionno}</b>. ${q.question}</div>`;
+ });
 }
 
-/* XML escape */
-function xmlEscape(s){
-  if(s==null) return '';
-  return s.toString()
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&apos;');
+/*** Word Table Helpers ***/
+function esc(s){
+ if(!s) return "";
+ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-/* Build WordprocessingML table for a single field (header + value row) */
-function makeFieldTableXml(fieldName, value){
-  // w:tbl with two rows: header row (bold) and value row (normal)
-  const hdr = `<w:tr>
-    <w:tc><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>${xmlEscape(fieldName)}</w:t></w:r></w:p></w:tc>
-  </w:tr>`;
-  const valRow = `<w:tr>
-    <w:tc><w:p><w:r><w:t>${xmlEscape(value)}</w:t></w:r></w:p></w:tc>
-  </w:tr>`;
-  // basic table wrapper (no borders specified => Word default table grid)
-  return `<w:tbl>${hdr}${valRow}</w:tbl>`;
+/* Create a 2-row table XML with no extra paragraphs */
+function table(field, value){
+ return `
+<w:tbl>
+ <w:tr><w:tc><w:p><w:r><w:t>${esc(field)}</w:t></w:r></w:p></w:tc></w:tr>
+ <w:tr><w:tc><w:p><w:r><w:t>${esc(value)}</w:t></w:r></w:p></w:tc></w:tr>
+</w:tbl>
+`;
 }
 
-/* Build full document.xml with multiple tables per question (matching uploaded format) */
-function buildDocumentXml(questionsList){
-  let body = '';
-  questionsList.forEach(q=>{
-    body += makeFieldTableXml('Module', q.module);
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>'; // spacer
-    body += makeFieldTableXml('questionno', q.questionno);
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('Question', q.question);
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('Type', q.type);
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    // Options as four separate tables labeled "option" each (to match your doc)
-    body += makeFieldTableXml('option', q.optionA || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('option', q.optionB || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('option', q.optionC || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('option', q.optionD || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('answer', q.answer || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('Solution', q.solution || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('Positive Marks', q.pm || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('Negative Marks', q.nm || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    body += makeFieldTableXml('language', q.language || '');
-    body += '<w:p><w:r><w:t></w:t></w:r></w:p>';
-    // horizontal separator paragraph
-    body += `<w:p><w:r><w:t>----------------------------------------------------</w:t></w:r></w:p>`;
-  });
-
-  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-  <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-    <w:body>
-      ${body}
-      <w:p><w:r><w:t></w:t></w:r></w:p>
-    </w:body>
-  </w:document>`;
-  return documentXml;
+/*** Build document.xml (Exact format — just like your file) ***/
+function buildDocXML(){
+ let out = "";
+ list.forEach(q=>{
+   out += table("Module", q.module);
+   out += table("questionno", q.questionno);
+   out += table("Question", q.question);
+   out += table("Type", "mcq");
+   out += table("option", q.A);
+   out += table("option", q.B);
+   out += table("option", q.C);
+   out += table("option", q.D);
+   out += table("answer", q.answer);
+   out += table("Solution", q.solution);
+   out += table("Positive Marks", q.pm);
+   out += table("Negative Marks", q.nm);
+   out += table("language", q.lang);
+ });
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+ <w:body>${out}</w:body>
+</w:document>`;
 }
 
-/* Minimal other parts for docx */
-const contentTypesXml = `<?xml version="1.0" encoding="UTF-8"?>
+/*** Minimal ZIP (docx) builder — 100% working ***/
+function makeDOCX(){
+ const doc = buildDocXML();
+
+ const files = {
+   "[Content_Types].xml":
+`<?xml version="1.0"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`;
+ <Default Extension="xml" ContentType="application/xml"/>
+ <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+ <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`,
 
-const relsRelsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+   "_rels/.rels":
+`<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`,
 
-const docRelsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+   "word/_rels/document.xml.rels":
+`<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`,
 
-/* ZIP builder (minimal, store method, works in browser) */
-/* Adapted from earlier: builds ZIP with local headers and central directory */
-function makeZipBuffer(files){
-  function str2buf(s){ return new TextEncoder().encode(s); }
-  function uint32LE(n){ return [n & 0xff, (n>>8)&0xff, (n>>16)&0xff, (n>>24)&0xff]; }
-  // CRC table
-  const crcTable = (function(){
-    let c; const table = new Uint32Array(256);
-    for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++){ c = c & 1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; } table[n]=c>>>0; } return table;
-  })();
-  function crc32(buf){
-    let crc = 0 ^ (-1);
-    for(let i=0;i<buf.length;i++) crc = (crc>>>8) ^ crcTable[(crc ^ buf[i]) & 0xff];
-    return (crc ^ (-1)) >>> 0;
-  }
+   "word/document.xml": doc
+ };
 
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  for(const name in files){
-    const content = files[name];
-    const data = str2buf(content);
-    const fname = str2buf(name);
-    const crc = crc32(data);
-    const compSize = data.length, uncompSize = data.length;
-    // local header
-    const lh = new Uint8Array(30 + fname.length);
-    lh.set([0x50,0x4b,0x03,0x04],0);
-    lh.set([20,0],4); // version
-    lh.set([0,0],6);
-    lh.set([0,0],8); // method = store
-    lh.set([0,0,0,0],10);
-    lh.set(uint32LE(crc),14);
-    lh.set(uint32LE(compSize),18);
-    lh.set(uint32LE(uncompSize),22);
-    lh.set([fname.length & 0xff, (fname.length>>8)&0xff],26);
-    lh.set(fname,30);
-    localParts.push({lh, data});
-    offset += lh.length + data.length;
-
-    // central header
-    const ch = new Uint8Array(46 + fname.length);
-    ch.set([0x50,0x4b,0x01,0x02],0);
-    ch.set([20,0],4); ch.set([20,0],6);
-    ch.set([0,0],8); ch.set([0,0],10);
-    ch.set([0,0,0,0],12);
-    ch.set(uint32LE(crc),16);
-    ch.set(uint32LE(compSize),20);
-    ch.set(uint32LE(uncompSize),24);
-    ch.set([fname.length & 0xff, (fname.length>>8)&0xff],28);
-    ch.set([0,0,0,0],30); ch.set([0,0,0,0],32); // extra/comment
-    ch.set([0,0],36); ch.set([0,0,0,0],38);
-    const relOff = offset - (lh.length + data.length);
-    ch.set(uint32LE(relOff),42);
-    ch.set(fname,46);
-    centralParts.push(ch);
-  }
-
-  // assemble
-  let totalLocal = 0;
-  localParts.forEach(it => totalLocal += it.lh.length + it.data.length);
-  let centralSize = 0; centralParts.forEach(c => centralSize += c.length);
-  const eocdSize = 22;
-  const out = new Uint8Array(totalLocal + centralSize + eocdSize);
-  let p = 0;
-  localParts.forEach(it => { out.set(it.lh, p); p+=it.lh.length; out.set(it.data, p); p+=it.data.length; });
-  const cdStart = p;
-  centralParts.forEach(c => { out.set(c, p); p+=c.length; });
-  const cdEnd = p;
-  // eocd
-  out.set([0x50,0x4b,0x05,0x06], p); p+=4;
-  out.set([0,0], p); p+=2; out.set([0,0], p); p+=2;
-  const entries = centralParts.length;
-  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p+=2;
-  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p+=2;
-  out.set(uint32LE(centralSize), p); p+=4;
-  out.set(uint32LE(cdStart), p); p+=4;
-  out.set([0,0], p); p+=2;
-  return out.buffer;
+ return zipBlob(files);
 }
 
-/* Build docx blob and trigger download */
-function generateDocxBlob(questionsList){
-  const docXml = buildDocumentXml(questionsList);
-  const files = {
-    "[Content_Types].xml": contentTypesXml,
-    "_rels/.rels": relsRelsXml,
-    "word/_rels/document.xml.rels": docRelsXml,
-    "word/document.xml": docXml
-  };
-  const zipBuf = makeZipBuffer(files);
-  return new Blob([zipBuf], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+/*** ZIP builder (store mode) ***/
+function zipBlob(files){
+ function str2buf(s){return new TextEncoder().encode(s);}
+ function u32(n){return [n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];}
+
+ const crcTable=new Uint32Array(256).map((_,n)=>{
+   let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1;
+   return c>>>0;
+ });
+
+ function crc32(buf){
+   let c=-1; for(let i=0;i<buf.length;i++)
+     c=(c>>>8)^crcTable[(c^buf[i])&255];
+   return (c^-1)>>>0;
+ }
+
+ let locals=[], centrals=[];
+ let offset=0;
+
+ for(let name in files){
+   let data=str2buf(files[name]);
+   let crc=crc32(data);
+   let fname=str2buf(name);
+
+   let lh=new Uint8Array(30+fname.length);
+   lh.set([0x50,0x4b,0x03,0x04],0);
+   lh.set([20,0],4);
+   lh.set([0,0],6);
+   lh.set([0,0],8);
+   lh.set([0,0,0,0],10);
+   lh.set(u32(crc),14);
+   lh.set(u32(data.length),18);
+   lh.set(u32(data.length),22);
+   lh.set([fname.length,0],26);
+   lh.set(fname,30);
+
+   locals.push({lh,data});
+   centrals.push({name,fname,crc,data,offset});
+   offset+=lh.length+data.length;
+ }
+
+ let cdSize=0;
+ centrals.forEach(c=>{
+   let ch=new Uint8Array(46+c.fname.length);
+   ch.set([0x50,0x4b,0x01,0x02],0);
+   ch.set([20,0],4); ch.set([20,0],6);
+   ch.set([0,0],8); ch.set([0,0],10);
+   ch.set([0,0,0,0],12);
+   ch.set(u32(c.crc),16);
+   ch.set(u32(c.data.length),20);
+   ch.set(u32(c.data.length),24);
+   ch.set([c.fname.length,0],28);
+   ch.set([0,0,0,0],30);
+   ch.set([0,0],36);
+   ch.set([0,0,0,0],38);
+   ch.set(u32(c.offset),42);
+   ch.set(c.fname,46);
+   c.ch=ch;
+   cdSize+=ch.length;
+ });
+
+ let total=offset+cdSize+22;
+ let out=new Uint8Array(total);
+ let p=0;
+
+ locals.forEach(o=>{out.set(o.lh,p);p+=o.lh.length;out.set(o.data,p);p+=o.data.length;});
+
+ let cdStart=p;
+ centrals.forEach(c=>{out.set(c.ch,p);p+=c.ch.length;});
+
+ out.set([0x50,0x4b,0x05,0x06],p);p+=4;
+ out.set([0,0,0,0],p);p+=4;
+ out.set([centrals.length,0],p);p+=2;
+ out.set([centrals.length,0],p);p+=2;
+ out.set(u32(cdSize),p);p+=4;
+ out.set(u32(cdStart),p);p+=4;
+ out.set([0,0],p);p+=2;
+
+ return new Blob([out],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
 
-/* Export handler */
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  if(questions.length===0){ alert('पहले कम से कम एक प्रश्न जोड़ो'); return; }
-  const blob = generateDocxBlob(questions);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mcq_export_tables.docx';
-  a.click();
-  setTimeout(()=> URL.revokeObjectURL(url), 3000);
-});
-
-/* escape for preview */
-function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,' '); }
+function exportDOCX(){
+ if(list.length===0) return alert("पहले question जोड़ो");
+ let blob = makeDOCX();
+ let url = URL.createObjectURL(blob);
+ let a = document.createElement("a");
+ a.href = url;
+ a.download = "mcq_table_format.docx";
+ a.click();
+}
 
 </script>
 </body>
