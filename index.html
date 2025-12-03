@@ -1,270 +1,557 @@
 <!doctype html>
-<html>
+<html lang="hi">
 <head>
 <meta charset="utf-8">
-<title>MCQ Table-format DOCX Generator (No background)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Current Affair → docx (HI + EN)</title>
 <style>
-  body{font-family: Arial; margin:14px}
-  .wrap{display:flex; gap:12px; flex-wrap:wrap}
-  .col{flex:1; min-width:300px; border:1px solid #ddd; padding:12px; border-radius:6px}
+  body{font-family:Arial, sans-serif;margin:14px;color:#111}
+  .wrap{display:flex;gap:14px;flex-wrap:wrap}
+  .col{flex:1;min-width:340px;border:1px solid #ddd;padding:12px;border-radius:8px;box-sizing:border-box}
+  input,textarea,select,button{font-size:14px}
   input, textarea, select { width:100%; padding:8px; margin:6px 0; box-sizing:border-box; }
-  button{padding:10px 14px; margin-right:8px; background:#0b7a3e; color:#fff; border:0; border-radius:6px; cursor:pointer}
-  .muted{color:#666; font-size:13px}
-  .preview-item{border:1px dashed #ccc; padding:8px; margin:8px 0}
-  table.preview-table{width:100%; border-collapse:collapse}
-  table.preview-table td{border:1px solid #ccc; padding:6px; vertical-align:top}
-  .hdr{font-weight:700; background:transparent}
+  button{padding:8px 12px;margin:6px 4px;border:0;border-radius:6px;cursor:pointer}
+  .btn-green{background:#0b7a3e;color:#fff}
+  .btn-blue{background:#0066cc;color:#fff}
+  .btn-red{background:#c0392b;color:#fff}
+  .muted{color:#666;font-size:13px}
+  .img-preview{max-width:260px;display:block;margin-top:6px;border:1px solid #ccc}
+  label{font-weight:600}
+  .small{font-size:13px;padding:6px 8px}
+  .preview-card{border:1px solid #ccc;padding:10px;border-radius:8px;margin-bottom:10px}
+  .preview-title{font-weight:700;margin-bottom:6px}
+  .row{display:flex;gap:8px;align-items:center}
+  .flex1{flex:1}
+  pre.metaPreview{background:#f6f6f6;padding:10px;border-radius:6px;overflow:auto}
 </style>
 </head>
 <body>
-<h2>MCQ → Table DOCX (No background)</h2>
-<p class="muted">हर प्रश्न एक ही table में: Left = field name, Right = value. Tables बिना background के export होंगे।</p>
+<h2>Current Affair → question.docx (HI + EN)</h2>
+<p class="muted">Fields भरो → Translate → Preview edit करो → Export करो (दोनों versions एक docx में)।</p>
 
 <div class="wrap">
-  <div class="col">
-    <label>Module</label>
-    <input id="module" placeholder="Hindi">
+  <div class="col" style="max-width:720px">
+    <label>###currentAffair (fixed)</label>
+    <input id="currentAffair" value="currentAffair">
 
-    <label>Question</label>
-    <textarea id="question" rows="3" placeholder="Question statement"></textarea>
+    <label>###categories</label>
+    <input id="categories" placeholder="उदाहरण: politics, economy">
 
-    <label>Option A</label>
-    <input id="optA" placeholder="Option A">
-    <label>Option B</label>
-    <input id="optB" placeholder="Option B">
-    <label>Option C</label>
-    <input id="optC" placeholder="Option C">
-    <label>Option D</label>
-    <input id="optD" placeholder="Option D">
+    <label>###states</label>
+    <input id="states" placeholder="उदाहरण: INTERNATIONAL / Rajasthan">
 
-    <label>Answer (A/B/C/D)</label>
-    <input id="answer" maxlength="1" placeholder="A">
-
-    <label>Solution</label>
-    <textarea id="solution" rows="3"></textarea>
-
-    <div style="display:flex; gap:8px">
-      <div style="flex:1">
-        <label>Positive Marks</label>
-        <input id="pm" value="1">
-      </div>
-      <div style="flex:1">
-        <label>Negative Marks</label>
-        <input id="nm" value="0.6">
-      </div>
-    </div>
-
-    <label>Language</label>
-    <select id="language">
+    <label>###lang</label>
+    <select id="lang">
       <option value="hi">hi</option>
       <option value="en">en</option>
     </select>
 
-    <div style="margin-top:10px">
-      <button id="addBtn">Add Question</button>
-      <button id="clearBtn" style="background:#999">Clear Fields</button>
+    <label>###title (Hindi लिखो)</label>
+    <input id="titleHi" placeholder="शीर्षक (हिंदी)">
+
+    <label>###banner - Image (optional)</label>
+    <input type="file" accept="image/*" id="bannerImg">
+    <img id="bannerPreview" class="img-preview" style="display:none">
+
+    <label>###body (Hindi)</label>
+    <textarea id="bodyHi" rows="10" placeholder="यहाँ पूरा body लिखो (Hindi)"></textarea>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button id="autoTranslate" class="btn-green">Auto Translate → English</button>
+      <button id="exportBtn" class="btn-blue">Export question.docx (दोनों भाषा)</button>
+      <button id="exportJson" class="small" style="background:#444;color:#fff">Export JSON</button>
+      <button id="importJsonBtn" class="small" style="background:#777;color:#fff">Import JSON</button>
+      <button id="clearBtn" class="small" style="background:#999;color:#fff">Clear</button>
+      <button id="saveBtn" class="small btn-green">Save Now</button>
     </div>
 
     <hr>
-
-    <div>
-      <button id="exportBtn" style="background:#0066cc">Export DOCX (tables)</button>
-      <span class="muted"> → Desktop recommended</span>
+    <label>JSON Import / Paste यहाँ (format नीचे दिया गया)</label>
+    <textarea id="jsonArea" style="height:90px;font-family:monospace"></textarea>
+    <div class="muted">JSON format example:
+      <pre style="background:#fafafa;padding:6px;border-radius:4px">{
+  "categories":"politics",
+  "states":"INTERNATIONAL",
+  "lang":"hi",
+  "title":"शीर्षक हिंदी",
+  "body":"यह है मुख्य लेख",
+  "banner": null
+}</pre>
     </div>
+
   </div>
 
   <div class="col">
-    <h3>Preview</h3>
-    <div id="previewArea" class="muted">No questions added.</div>
-    <div style="margin-top:10px">
-      <button id="removeLast" style="background:#c0392b">Remove Last</button>
-      <button id="resetAll" style="background:#7f8c8d">Clear All</button>
+    <h3>Preview & Edit</h3>
+    <p class="muted">नीचे दोनों संस्करण (HI / EN) दिखेंगे — Edit दबाकर सीधे बदलो।</p>
+
+    <div id="previewHI" class="preview-card">
+      <div class="preview-title">Hindi Preview</div>
+      <div><strong>###currentAffair</strong></div>
+      <div id="pv_currentAffair_hi"></div>
+      <div style="margin-top:6px"><strong>###categories</strong></div>
+      <div id="pv_categories_hi"></div>
+      <div style="margin-top:6px"><strong>###states</strong></div>
+      <div id="pv_states_hi"></div>
+      <div style="margin-top:6px"><strong>###lang</strong></div>
+      <div id="pv_lang_hi"></div>
+      <div style="margin-top:6px"><strong>###title</strong></div>
+      <div id="pv_title_hi"></div>
+      <div id="pv_banner_hi_container" style="margin-top:8px"></div>
+      <div style="margin-top:8px"><strong>###body</strong></div>
+      <div id="pv_body_hi" style="white-space:pre-wrap"></div>
+      <div style="margin-top:8px" class="row">
+        <button id="editHi" class="small">Edit</button>
+        <button id="translateHiToEn" class="small">Translate → EN</button>
+      </div>
     </div>
+
+    <div id="previewEN" class="preview-card">
+      <div class="preview-title">English Preview</div>
+      <div><strong>###currentAffair</strong></div>
+      <div id="pv_currentAffair_en"></div>
+      <div style="margin-top:6px"><strong>###categories</strong></div>
+      <div id="pv_categories_en"></div>
+      <div style="margin-top:6px"><strong>###states</strong></div>
+      <div id="pv_states_en"></div>
+      <div style="margin-top:6px"><strong>###lang</strong></div>
+      <div id="pv_lang_en"></div>
+      <div style="margin-top:6px"><strong>###title</strong></div>
+      <div id="pv_title_en"></div>
+      <div id="pv_banner_en_container" style="margin-top:8px"></div>
+      <div style="margin-top:8px"><strong>###body</strong></div>
+      <div id="pv_body_en" style="white-space:pre-wrap"></div>
+      <div style="margin-top:8px" class="row">
+        <button id="editEn" class="small">Edit</button>
+        <button id="reTranslate" class="small">Re-Translate (from HI)</button>
+      </div>
+    </div>
+
+    <hr>
+    <div><strong>Quick Raw Preview</strong></div>
+    <pre id="rawPreview" class="metaPreview"></pre>
   </div>
 </div>
 
 <script>
-/* State */
-let questions = [];
-let qno = 1;
+/* ---------- State & Autosave ---------- */
+const STORAGE_KEY = "ca_hien_v1";
+const $ = id => document.getElementById(id);
 
-function val(id){ return document.getElementById(id).value.trim(); }
-function setVal(id,v){ document.getElementById(id).value = v || ''; }
+let state = {
+  currentAffair: 'currentAffair',
+  categories: '',
+  states: '',
+  lang: 'hi',
+  titleHi: '',
+  titleEn: '',
+  bodyHi: '',
+  bodyEn: '',
+  bannerData: null // {name,type,dataURL}
+};
 
-document.getElementById('addBtn').addEventListener('click', () => {
-  const module = val('module') || 'General';
-  const question = val('question');
-  if(!question){ alert('Question डालो'); return; }
-  const item = {
-    module,
-    questionno: qno++,
-    question,
-    type: 'mcq',
-    option: [val('optA'), val('optB'), val('optC'), val('optD')],
-    answer: val('answer').toUpperCase(),
-    solution: val('solution'),
-    pm: val('pm') || '1',
-    nm: val('nm') || '0',
-    language: val('language') || 'hi'
-  };
-  questions.push(item);
-  renderPreview();
-  clearFields(false);
-});
-
-document.getElementById('clearBtn').addEventListener('click', ()=> clearFields(true));
-document.getElementById('removeLast').addEventListener('click', ()=> {
-  if(questions.length===0) return alert('No questions to remove');
-  if(!confirm('Remove last question?')) return;
-  questions.pop();
-  qno = questions.length ? (questions[questions.length-1].questionno + 1) : 1;
-  renderPreview();
-});
-document.getElementById('resetAll').addEventListener('click', ()=> {
-  if(!confirm('Remove all questions?')) return;
-  questions = []; qno = 1; renderPreview();
-});
-
-function clearFields(all=true){
-  if(all) setVal('module','');
-  setVal('question','');
-  setVal('optA',''); setVal('optB',''); setVal('optC',''); setVal('optD','');
-  setVal('answer',''); setVal('solution','');
-  setVal('pm','1'); setVal('nm','0.6');
-}
-
-/* Preview: show each question as small HTML table */
-function renderPreview(){
-  const area = document.getElementById('previewArea');
-  if(questions.length===0){ area.innerHTML = '<div class="muted">No questions added.</div>'; return; }
-  area.innerHTML = '';
-  questions.forEach(q=>{
-    const tbl = document.createElement('table');
-    tbl.className = 'preview-table';
-    // helper to add row
-    function addRow(name, valTxt, boldLeft=true){
-      const tr = document.createElement('tr');
-      const td1 = document.createElement('td');
-      td1.textContent = name;
-      if(boldLeft) td1.style.fontWeight = '700';
-      const td2 = document.createElement('td');
-      td2.textContent = valTxt;
-      tr.appendChild(td1); tr.appendChild(td2);
-      tbl.appendChild(tr);
+function loadState(){
+  try{
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(s){
+      const obj = JSON.parse(s);
+      Object.assign(state, obj);
+      if(state.bannerData && state.bannerData.dataURL){
+        showBannerPreview(state.bannerData.dataURL);
+      }
     }
-    addRow('Module', q.module);
-    addRow('questionno', q.questionno);
-    addRow('Question', q.question, false);
-    addRow('Type', q.type);
-    // options - four rows with same field name "option"
-    addRow('option', q.option[0] || '');
-    addRow('option', q.option[1] || '');
-    addRow('option', q.option[2] || '');
-    addRow('option', q.option[3] || '');
-    addRow('answer', q.answer || '');
-    addRow('Solution', q.solution || '', false);
-    addRow('Positive Marks', q.pm);
-    addRow('Negative Marks', q.nm);
-    addRow('language', q.language || '');
-    area.appendChild(tbl);
-    area.appendChild(document.createElement('br'));
-  });
+  }catch(e){ console.warn(e); }
+  // Populate inputs
+  $('currentAffair').value = state.currentAffair || 'currentAffair';
+  $('categories').value = state.categories || '';
+  $('states').value = state.states || '';
+  $('lang').value = state.lang || 'hi';
+  $('titleHi').value = state.titleHi || '';
+  $('bodyHi').value = state.bodyHi || '';
+  $('jsonArea').value = '';
+  renderAll();
 }
-
-/* XML / DOCX generation helpers */
-function xmlEscape(s){
-  if(s==null) return '';
-  return s.toString()
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&apos;');
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderRawPreview();
+  }catch(e){ console.warn(e); }
 }
+setInterval(saveState, 2000);
 
-/* Build a single question table: each field is a row with two cells (left header, right value) */
-function makeQuestionTableXml(q){
-  const rows = [];
-  function r(name, value, boldLeft){
-    const leftRunPr = boldLeft ? '<w:rPr><w:b/></w:rPr>' : '';
-    return `<w:tr>
-      <w:tc>
-        <w:p><w:r>${leftRunPr}<w:t>${xmlEscape(name)}</w:t></w:r></w:p>
-      </w:tc>
-      <w:tc>
-        <w:p><w:r><w:t>${xmlEscape(value)}</w:t></w:r></w:p>
-      </w:tc>
-    </w:tr>`;
+/* ---------- Helpers ---------- */
+function xmlEscape(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function readFileToDataURL(input){ return new Promise(res=>{ const f = input.files && input.files[0]; if(!f) return res(null); const r = new FileReader(); r.onload = ()=> res({name:f.name,type:f.type,dataURL:r.result}); r.readAsDataURL(f); }); }
+function showBannerPreview(url){ const img = $('bannerPreview'); if(!url){ img.style.display='none'; img.src=''; return; } img.src = url; img.style.display='block'; $('pv_banner_hi_container').innerHTML = ''; $('pv_banner_en_container').innerHTML = ''; const imgTag1 = document.createElement('img'); imgTag1.src = url; imgTag1.className='img-preview'; $('pv_banner_hi_container').appendChild(imgTag1); const imgTag2 = document.createElement('img'); imgTag2.src = url; imgTag2.className='img-preview'; $('pv_banner_en_container').appendChild(imgTag2); }
+
+/* ---------- UI events ---------- */
+$('bannerImg').addEventListener('change', async ()=> {
+  const d = await readFileToDataURL($('bannerImg'));
+  if(d){ state.bannerData = d; showBannerPreview(d.dataURL); saveState(); }
+});
+
+$('autoTranslate').addEventListener('click', async ()=> {
+  // translate titleHi and bodyHi
+  if(!state.titleHi && !$('titleHi').value.trim()) {
+    alert('पहले Title और Body भरो (Hindi)'); return;
   }
-  rows.push(r('Module', q.module, true));
-  rows.push(r('questionno', q.questionno, true));
-  rows.push(r('Question', q.question, false));
-  rows.push(r('Type', q.type, true));
-  rows.push(r('option', q.option[0]||'', false));
-  rows.push(r('option', q.option[1]||'', false));
-  rows.push(r('option', q.option[2]||'', false));
-  rows.push(r('option', q.option[3]||'', false));
-  rows.push(r('answer', q.answer||'', true));
-  rows.push(r('Solution', q.solution||'', false));
-  rows.push(r('Positive Marks', q.pm||'', true));
-  rows.push(r('Negative Marks', q.nm||'', true));
-  rows.push(r('language', q.language||'', true));
+  // ensure state values updated
+  state.titleHi = $('titleHi').value;
+  state.bodyHi = $('bodyHi').value;
+  $('pv_title_en').textContent = 'Translating...';
+  $('pv_body_en').textContent = 'Translating...';
+  try{
+    const tTitle = await translateText(state.titleHi, 'hi', 'en');
+    const tBody = await translateText(state.bodyHi, 'hi', 'en');
+    state.titleEn = tTitle;
+    state.bodyEn = tBody;
+    renderAll();
+    saveState();
+    alert('Translate हो गया — Preview में देखो और एडिट कर सकते हो।');
+  }catch(e){
+    alert('Translate failed: ' + e.message);
+    console.error(e);
+  }
+});
 
-  // Wrap table; no extra spacer paragraphs between tables
-  return `<w:tbl>
-    ${rows.join('\n')}
-  </w:tbl>`;
+$('exportJson').addEventListener('click', ()=> {
+  const payload = {
+    currentAffair: state.currentAffair,
+    categories: state.categories,
+    states: state.states,
+    lang: state.lang,
+    titleHi: state.titleHi,
+    titleEn: state.titleEn,
+    bodyHi: state.bodyHi,
+    bodyEn: state.bodyEn,
+    bannerData: state.bannerData ? {name: state.bannerData.name, type: state.bannerData.type, dataURL: state.bannerData.dataURL} : null
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'current_affair.json'; a.click();
+  setTimeout(()=> URL.revokeObjectURL(url),3000);
+});
+
+$('importJsonBtn').addEventListener('click', ()=> {
+  try{
+    const v = $('jsonArea').value.trim();
+    if(!v) return alert('JSON पेस्ट करो नीचे के बॉक्स में');
+    const obj = JSON.parse(v);
+    // map fields permissively
+    state.currentAffair = obj.currentAffair || state.currentAffair;
+    state.categories = obj.categories || '';
+    state.states = obj.states || '';
+    state.lang = obj.lang || 'hi';
+    state.titleHi = obj.title || obj.titleHi || state.titleHi || '';
+    state.bodyHi = obj.body || obj.bodyHi || state.bodyHi || '';
+    if(obj.banner && typeof obj.banner === 'string') state.bannerData = {name:'banner', type:'image/png', dataURL: obj.banner};
+    // set inputs
+    $('currentAffair').value = state.currentAffair;
+    $('categories').value = state.categories;
+    $('states').value = state.states;
+    $('lang').value = state.lang;
+    $('titleHi').value = state.titleHi;
+    $('bodyHi').value = state.bodyHi;
+    if(state.bannerData) showBannerPreview(state.bannerData.dataURL);
+    renderAll(); saveState();
+    alert('Imported JSON');
+  }catch(e){ alert('Invalid JSON: ' + e.message); }
+});
+
+$('clearBtn').addEventListener('click', ()=> {
+  if(!confirm('सारे फील्ड साफ़ कर दूँ?')) return;
+  state = { currentAffair:'currentAffair', categories:'', states:'', lang:'hi', titleHi:'', titleEn:'', bodyHi:'', bodyEn:'', bannerData:null };
+  $('bannerImg').value = '';
+  showBannerPreview(null);
+  $('titleHi').value=''; $('bodyHi').value=''; $('categories').value=''; $('states').value=''; $('lang').value='hi';
+  renderAll(); saveState();
+});
+
+$('saveBtn').addEventListener('click', ()=> { // immediate save
+  state.currentAffair = $('currentAffair').value;
+  state.categories = $('categories').value;
+  state.states = $('states').value;
+  state.lang = $('lang').value;
+  state.titleHi = $('titleHi').value;
+  state.bodyHi = $('bodyHi').value;
+  saveState(); alert('Saved'); 
+});
+
+/* Edit buttons */
+$('editHi').addEventListener('click', ()=> {
+  // simple prompt-based edit for demo (could be replaced with modal)
+  const newTitle = prompt('Edit Hindi Title:', state.titleHi || $('titleHi').value);
+  if(newTitle!==null) { state.titleHi = newTitle; $('titleHi').value = newTitle; }
+  const newBody = prompt('Edit Hindi Body (\\n newlines will be preserved if you paste):', state.bodyHi || $('bodyHi').value);
+  if(newBody!==null) { state.bodyHi = newBody; $('bodyHi').value = newBody; }
+  renderAll(); saveState();
+});
+$('editEn').addEventListener('click', ()=> {
+  const newTitle = prompt('Edit English Title:', state.titleEn || '');
+  if(newTitle!==null) state.titleEn = newTitle;
+  const newBody = prompt('Edit English Body (\\n allowed):', state.bodyEn || '');
+  if(newBody!==null) state.bodyEn = newBody;
+  renderAll(); saveState();
+});
+$('translateHiToEn').addEventListener('click', async ()=> {
+  // translate only current hi fields
+  state.titleHi = $('titleHi').value;
+  state.bodyHi = $('bodyHi').value;
+  if(!state.titleHi && !state.bodyHi){ alert('पहले Hindi Title/Body भरो'); return; }
+  try{
+    const tTitle = state.titleHi ? await translateText(state.titleHi, 'hi', 'en') : '';
+    const tBody = state.bodyHi ? await translateText(state.bodyHi, 'hi', 'en') : '';
+    state.titleEn = tTitle; state.bodyEn = tBody;
+    renderAll(); saveState();
+    alert('Translated');
+  }catch(e){ alert('Translate failed: ' + e.message); }
+});
+$('reTranslate').addEventListener('click', async ()=> {
+  // re-translate from current hi
+  $('pv_title_en').textContent = 'Translating...';
+  $('pv_body_en').textContent = 'Translating...';
+  try{
+    const tTitle = state.titleHi ? await translateText(state.titleHi, 'hi', 'en') : '';
+    const tBody = state.bodyHi ? await translateText(state.bodyHi, 'hi', 'en') : '';
+    state.titleEn = tTitle; state.bodyEn = tBody;
+    renderAll(); saveState();
+    alert('Re-Translated');
+  }catch(e){ alert('Translate failed: ' + e.message); }
+});
+
+/* ---------- Rendering ---------- */
+function renderAll(){
+  // sync from inputs
+  state.currentAffair = $('currentAffair').value;
+  state.categories = $('categories').value;
+  state.states = $('states').value;
+  state.lang = $('lang').value;
+  state.titleHi = $('titleHi').value;
+  state.bodyHi = $('bodyHi').value;
+  // preview hi
+  $('pv_currentAffair_hi').textContent = state.currentAffair || '';
+  $('pv_categories_hi').textContent = state.categories || '';
+  $('pv_states_hi').textContent = state.states || '';
+  $('pv_lang_hi').textContent = state.lang || '';
+  $('pv_title_hi').textContent = state.titleHi || '';
+  $('pv_body_hi').textContent = state.bodyHi || '';
+  // preview en
+  $('pv_currentAffair_en').textContent = state.currentAffair || '';
+  $('pv_categories_en').textContent = state.categories || '';
+  $('pv_states_en').textContent = state.states || '';
+  $('pv_lang_en').textContent = 'en';
+  $('pv_title_en').textContent = state.titleEn || '';
+  $('pv_body_en').textContent = state.bodyEn || '';
+  if(state.bannerData && state.bannerData.dataURL) showBannerPreview(state.bannerData.dataURL);
+  renderRawPreview();
+}
+function renderRawPreview(){
+  const parts = [
+    '###currentAffair',
+    state.currentAffair || '',
+    '',
+    '###categories',
+    state.categories || '',
+    '',
+    '###states',
+    state.states || '',
+    '',
+    '###lang',
+    'hi',
+    '',
+    '###title',
+    state.titleHi || '',
+    '',
+    '###banner',
+    state.bannerData ? '[image embedded]' : '',
+    '',
+    '###body',
+    state.bodyHi || '',
+    '\n\n----\n\n',
+    '###currentAffair',
+    state.currentAffair || '',
+    '',
+    '###categories',
+    state.categories || '',
+    '',
+    '###states',
+    state.states || '',
+    '',
+    '###lang',
+    'en',
+    '',
+    '###title',
+    state.titleEn || '',
+    '',
+    '###banner',
+    state.bannerData ? '[image embedded]' : '',
+    '',
+    '###body',
+    state.bodyEn || ''
+  ];
+  $('rawPreview').textContent = parts.join('\\n');
 }
 
-/* Build full document.xml -> simply concatenate question tables one after another */
-function buildDocumentXml(questionsList){
-  let body = '';
-  questionsList.forEach(q=>{
-    body += makeQuestionTableXml(q);
-    // no separator paragraph — tables will follow directly
+/* ---------- Translation (Google public endpoint) ---------- */
+async function translateText(text, source='hi', target='en'){
+  if(!text) return '';
+  // encode
+  const q = encodeURIComponent(text);
+  // using public gtx endpoint
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${q}`;
+  // fetch and parse
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Translate request failed: ' + res.status);
+  const data = await res.json();
+  // data is nested array: data[0] contains sentences
+  const segments = data[0].map(s => s[0]).filter(Boolean);
+  return segments.join('');
+}
+
+/* ---------- DOCX BUILD (both versions in same doc) ---------- */
+
+/* drawing xml for image (r:embed id) */
+function makeDrawingXml(rId, cx=4500000, cy=3000000){
+  return `<w:r>
+    <w:drawing>
+      <wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+        <wp:extent cx="${cx}" cy="${cy}"/>
+        <wp:docPr id="1" name="Image"/>
+        <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+          <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+            <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+              <pic:nvPicPr><pic:cNvPr id="0" name="Image"/><pic:cNvPicPr/></pic:nvPicPr>
+              <pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+              <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+            </pic:pic>
+          </a:graphicData>
+        </a:graphic>
+      </wp:inline>
+    </w:drawing>
+  </w:r>`;
+}
+
+/* build document xml with both versions */
+function buildDocumentXml(relMap){
+  const hiLines = [];
+  hiLines.push('<w:p><w:r><w:t>###currentAffair</w:t></w:r></w:p>');
+  hiLines.push(`<w:p><w:r><w:t>${xmlEscape(state.currentAffair)}</w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###categories</w:t></w:r></w:p>');
+  hiLines.push(`<w:p><w:r><w:t>${xmlEscape(state.categories)}</w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###states</w:t></w:r></w:p>');
+  hiLines.push(`<w:p><w:r><w:t>${xmlEscape(state.states)}</w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###lang</w:t></w:r></w:p>');
+  hiLines.push(`<w:p><w:r><w:t>hi</w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###title</w:t></w:r></w:p>');
+  hiLines.push(`<w:p><w:r><w:t>${xmlEscape(state.titleHi)}</w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###banner</w:t></w:r></w:p>');
+  if(relMap.banner) hiLines.push(makeDrawingXml(relMap.banner, 4500000, 3000000));
+  else hiLines.push(`<w:p><w:r><w:t></w:t></w:r></w:p>`);
+  hiLines.push('<w:p><w:r><w:t>###body</w:t></w:r></w:p>');
+  (state.bodyHi || '').split(/\\n+/).forEach(p => {
+    hiLines.push(`<w:p><w:r><w:t>${xmlEscape(p)}</w:t></w:r></w:p>`);
   });
+
+  // Separator
+  hiLines.push('<w:p><w:r><w:t> </w:t></w:r></w:p>');
+  hiLines.push('<w:p><w:r><w:t>--- English Version ---</w:t></w:r></w:p>');
+
+  const enLines = [];
+  enLines.push('<w:p><w:r><w:t>###currentAffair</w:t></w:r></w:p>');
+  enLines.push(`<w:p><w:r><w:t>${xmlEscape(state.currentAffair)}</w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###categories</w:t></w:r></w:p>');
+  enLines.push(`<w:p><w:r><w:t>${xmlEscape(state.categories)}</w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###states</w:t></w:r></w:p>');
+  enLines.push(`<w:p><w:r><w:t>${xmlEscape(state.states)}</w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###lang</w:t></w:r></w:p>');
+  enLines.push(`<w:p><w:r><w:t>en</w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###title</w:t></w:r></w:p>');
+  enLines.push(`<w:p><w:r><w:t>${xmlEscape(state.titleEn)}</w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###banner</w:t></w:r></w:p>');
+  if(relMap.banner) enLines.push(makeDrawingXml(relMap.banner, 4500000, 3000000));
+  else enLines.push(`<w:p><w:r><w:t></w:t></w:r></w:p>`);
+  enLines.push('<w:p><w:r><w:t>###body</w:t></w:r></w:p>');
+  (state.bodyEn || '').split(/\\n+/).forEach(p => {
+    enLines.push(`<w:p><w:r><w:t>${xmlEscape(p)}</w:t></w:r></w:p>`);
+  });
+
+  const bodyXml = hiLines.concat(enLines).join('\\n');
 
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-  <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-    <w:body>
-      ${body}
-      <w:p><w:r><w:t></w:t></w:r></w:p>
-    </w:body>
-  </w:document>`;
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    ${bodyXml}
+    <w:p/><w:sectPr/>
+  </w:body>
+</w:document>`;
   return documentXml;
 }
 
-/* minimal other parts for docx */
-const contentTypesXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`;
+/* Build package files */
+function buildPackageFiles(){
+  const mediaFiles = [];
+  const relIds = [];
+  if(state.bannerData && state.bannerData.dataURL){
+    const d = state.bannerData;
+    const comma = d.dataURL.indexOf(',');
+    const b64 = d.dataURL.slice(comma+1);
+    const binStr = atob(b64);
+    const u8 = new Uint8Array(binStr.length);
+    for(let i=0;i<binStr.length;i++) u8[i] = binStr.charCodeAt(i);
+    let ext='png';
+    if(d.type && d.type.indexOf('jpeg')!==-1) ext='jpg';
+    else if(d.type && d.type.indexOf('png')!==-1) ext='png';
+    const name = `image1.${ext}`;
+    mediaFiles.push({name, type: d.type||('image/'+ext), data: u8});
+    relIds.push('rIdImg1');
+  }
 
-const relsRelsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+  const relMap = { banner: mediaFiles.length ? relIds[0] : null };
 
-const docRelsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+  const documentXml = buildDocumentXml(relMap);
 
-/* ZIP builder (store method) */
-function makeZipBuffer(files){
-  function str2buf(s){ return new TextEncoder().encode(s); }
-  function uint32LE(n){ return [n & 0xff, (n>>8)&0xff, (n>>16)&0xff, (n>>24)&0xff]; }
-  const crcTable = (function(){ let c; const table = new Uint32Array(256); for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++){ c = c & 1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; } table[n]=c>>>0; } return table; })();
+  // relationships xml for document images
+  let relsXml = `<?xml version="1.0" encoding="UTF-8"?>\\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
+  mediaFiles.forEach((m,i)=> relsXml += `\\n  <Relationship Id="${relIds[i]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${m.name}"/>`);
+  relsXml += `\\n</Relationships>`;
+
+  // content types
+  const extMap = {};
+  mediaFiles.forEach(m => { const ext = m.name.split('.').pop(); extMap[ext] = m.type; });
+  let ctXml = `<?xml version="1.0" encoding="UTF-8"?>\\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\\n`;
+  ctXml += `  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\\n`;
+  ctXml += `  <Default Extension="xml" ContentType="application/xml"/>\\n`;
+  Object.keys(extMap).forEach(ext => { ctXml += `  <Default Extension="${ext}" ContentType="${extMap[ext]}"/>\\n`; });
+  ctXml += `  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>\\n</Types>`;
+
+  const files = {};
+  files["[Content_Types].xml"] = ctXml;
+  files["_rels/.rels"] = `<?xml version="1.0"?>\\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\\n  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>\\n</Relationships>`;
+  files["word/document.xml"] = documentXml;
+  files["word/_rels/document.xml.rels"] = relsXml;
+  mediaFiles.forEach(m => files[`word/media/${m.name}`] = m.data);
+  return files;
+}
+
+/* ZIP builder (binary-safe) */
+function buildZipBlobFromFiles(files){
+  function toUint8(x){ if(typeof x === 'string') return new TextEncoder().encode(x); if(x instanceof Uint8Array) return x; if(x instanceof ArrayBuffer) return new Uint8Array(x); throw new Error('Unsupported file data'); }
+  function uint32LE(n){ return [n & 0xff,(n>>8)&0xff,(n>>16)&0xff,(n>>24)&0xff]; }
+  const crcTable = (function(){ let c; const table = new Uint32Array(256); for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++){ c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);} table[n]=c>>>0;} return table; })();
   function crc32(buf){ let crc = 0 ^ (-1); for(let i=0;i<buf.length;i++) crc = (crc>>>8) ^ crcTable[(crc ^ buf[i]) & 0xff]; return (crc ^ (-1)) >>> 0; }
 
-  const localParts = [];
-  const centralParts = [];
+  const localParts = [], centralParts = [];
   let offset = 0;
   for(const name in files){
-    const content = files[name];
-    const data = str2buf(content);
-    const fname = str2buf(name);
+    const data = toUint8(files[name]);
+    const fname = new TextEncoder().encode(name);
     const crc = crc32(data);
     const compSize = data.length, uncompSize = data.length;
+
     const lh = new Uint8Array(30 + fname.length);
     lh.set([0x50,0x4b,0x03,0x04],0);
     lh.set([20,0],4);
@@ -276,7 +563,7 @@ function makeZipBuffer(files){
     lh.set(uint32LE(uncompSize),22);
     lh.set([fname.length & 0xff, (fname.length>>8)&0xff],26);
     lh.set(fname,30);
-    localParts.push({lh, data});
+    localParts.push({lh,data});
     offset += lh.length + data.length;
 
     const ch = new Uint8Array(46 + fname.length);
@@ -290,58 +577,60 @@ function makeZipBuffer(files){
     ch.set([fname.length & 0xff, (fname.length>>8)&0xff],28);
     ch.set([0,0,0,0],30); ch.set([0,0,0,0],32);
     ch.set([0,0],36); ch.set([0,0,0,0],38);
-    const relOff = offset - (lh.length + data.length);
-    ch.set(uint32LE(relOff),42);
+    const localStart = offset - (lh.length + data.length);
+    ch.set(uint32LE(localStart),42);
     ch.set(fname,46);
     centralParts.push(ch);
   }
 
-  let totalLocal = 0;
-  localParts.forEach(it => totalLocal += it.lh.length + it.data.length);
+  let totalLocal = 0; localParts.forEach(it => totalLocal += it.lh.length + it.data.length);
   let centralSize = 0; centralParts.forEach(c => centralSize += c.length);
   const eocdSize = 22;
   const out = new Uint8Array(totalLocal + centralSize + eocdSize);
   let p = 0;
-  localParts.forEach(it => { out.set(it.lh, p); p+=it.lh.length; out.set(it.data, p); p+=it.data.length; });
+  localParts.forEach(it => { out.set(it.lh, p); p += it.lh.length; out.set(it.data, p); p += it.data.length; });
   const cdStart = p;
-  centralParts.forEach(c => { out.set(c, p); p+=c.length; });
-  const cdEnd = p;
-  out.set([0x50,0x4b,0x05,0x06], p); p+=4;
-  out.set([0,0], p); p+=2; out.set([0,0], p); p+=2;
+  centralParts.forEach(c => { out.set(c, p); p += c.length; });
+  const cdSize = p - cdStart;
+  out.set([0x50,0x4b,0x05,0x06], p); p += 4;
+  out.set([0,0], p); p += 2;
+  out.set([0,0], p); p += 2;
   const entries = centralParts.length;
-  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p+=2;
-  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p+=2;
-  out.set(uint32LE(centralSize), p); p+=4;
-  out.set(uint32LE(cdStart), p); p+=4;
-  out.set([0,0], p); p+=2;
-  return out.buffer;
+  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p += 2;
+  out.set([ entries & 0xff, (entries>>8)&0xff ], p); p += 2;
+  out.set(uint32LE(cdSize), p); p += 4;
+  out.set(uint32LE(cdStart), p); p += 4;
+  out.set([0,0], p); p += 2;
+  return new Blob([out], {type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
 
-function generateDocxBlob(questionsList){
-  const docXml = buildDocumentXml(questionsList);
-  const files = {
-    "[Content_Types].xml": contentTypesXml,
-    "_rels/.rels": relsRelsXml,
-    "word/_rels/document.xml.rels": docRelsXml,
-    "word/document.xml": docXml
-  };
-  const zipBuf = makeZipBuffer(files);
-  return new Blob([zipBuf], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
-}
+/* ---------- Export docx ---------- */
+$('exportBtn').addEventListener('click', ()=> {
+  // ensure latest inputs captured
+  state.currentAffair = $('currentAffair').value;
+  state.categories = $('categories').value;
+  state.states = $('states').value;
+  state.lang = $('lang').value;
+  state.titleHi = $('titleHi').value;
+  state.bodyHi = $('bodyHi').value;
 
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  if(questions.length===0){ alert('पहले कम से कम एक प्रश्न जोड़ो'); return; }
-  const blob = generateDocxBlob(questions);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mcq_export_tables.docx';
-  a.click();
-  setTimeout(()=> URL.revokeObjectURL(url), 3000);
+  // minimal check
+  if(!state.titleHi && !state.bodyHi){ if(!confirm('Title और Body दोनों खाली हैं — फिर भी export करना है?')) return; }
+
+  try{
+    const files = buildPackageFiles();
+    const blob = buildZipBlobFromFiles(files);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'question.docx'; a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  }catch(e){
+    console.error(e); alert('Export failed: ' + (e && e.message));
+  }
 });
 
-/* small util (escape for preview) */
-function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,' '); }
+/* ---------- Init ---------- */
+loadState();
+renderAll();
 
 </script>
 </body>
